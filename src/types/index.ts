@@ -1,4 +1,3 @@
-
 export type ClinicId = "northside" | "westview" | "central" | "eastside";
 
 export interface Clinic {
@@ -62,4 +61,11 @@ export interface N8nWorkflowData {
   category: string;
   timestamp: string;
   needsEscalation: boolean;
+  suggestedSolution?: string;
+  aiResponse?: string;
+  requesterEmail?: string;
+  callbackUrl?: string;
+  responseTime?: string;
+  alertLevel?: string;
+  status?: string;
 }

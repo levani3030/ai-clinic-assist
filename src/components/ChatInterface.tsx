@@ -27,7 +27,8 @@ import {
   determineCategory, 
   suggestPriority, 
   sanitizeData, 
-  shouldEscalate 
+  shouldEscalate,
+  suggestSolution
 } from "../utils/aiProcessing";
 import { prepareWorkflowData, sendToN8nWebhook } from "../utils/n8nWorkflow";
 import MessageBubble from "./MessageBubble";
@@ -274,51 +275,99 @@ Is this information correct? Your ticket will be created and routed to the appro
   const handleSubmitTicket = () => {
     setIsProcessing(true);
     
-    // Prepare data for n8n workflow
-    const workflowData = prepareWorkflowData(formData, selectedClinic?.name || "Unknown Clinic");
+    // Add a loading message
+    addMessage("Processing your IT support ticket...", "assistant");
     
-    // In production, this would call an actual API endpoint
-    sendToN8nWebhook(workflowData)
-      .then(response => {
-        if (response.success) {
-          // Success notification
-          toast({
-            title: "Support Ticket Created",
-            description: `Ticket ${workflowData.ticketId} has been submitted to ${selectedClinic?.name} IT support team.`,
-          });
-          
-          addMessage(`Thank you! Your IT support ticket (${workflowData.ticketId}) has been created successfully. The support team will contact you soon at ${formatPhoneNumber(formData.phone)}. You can close this chat or submit another issue.`);
-          
-          // Reset the form for a new ticket
-          setFormData({
-            clinic: null,
-            department: null,
-            floor: "",
-            room: "",
-            phone: "",
-            priority: null,
-            description: ""
-          });
-          
-          setCurrentStep("clinic");
-        } else {
-          toast({
-            title: "Error",
-            description: "There was a problem creating your ticket. Please try again.",
-            variant: "destructive"
-          });
-        }
-        setIsProcessing(false);
-      })
-      .catch(error => {
-        console.error("Error submitting ticket:", error);
-        toast({
-          title: "Error",
-          description: "There was a problem creating your ticket. Please try again.",
-          variant: "destructive"
+    // Get the clinic name for display
+    const selectedClinicName = selectedClinic?.name || "Unknown Clinic";
+    
+    // Sanitize the data for security
+    const sanitizedData = sanitizeData(formData);
+    
+    // Use AI functions to process the ticket
+    const category = determineCategory(sanitizedData.description);
+    const suggestedSolution = suggestSolution(sanitizedData.description, category);
+    
+    // Prepare data for n8n workflow
+    const ticketData = prepareWorkflowData(sanitizedData, selectedClinicName);
+    
+    // Add AI-enhanced properties
+    ticketData.category = category;
+    ticketData.suggestedSolution = suggestedSolution;
+    ticketData.requesterEmail = ""; // In a real app, this would be the logged-in user's email
+    
+    // Retry counter to track retries
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    // Function to attempt webhook submission with retry logic
+    const attemptSubmission = () => {
+      // Send to n8n webhook
+      sendToN8nWebhook(ticketData)
+        .then(response => {
+          if (response.success) {
+            // Successful ticket creation
+            setIsProcessing(false);
+            
+            // Success message with ticket details
+            addMessage(
+              `✅ Your ticket has been successfully submitted!\n\n` +
+              `📝 **Ticket ID:** ${ticketData.ticketId}\n` +
+              `🏥 **Clinic:** ${selectedClinicName}\n` +
+              `🔍 **Category:** ${category}\n` +
+              `🚨 **Priority:** ${sanitizedData.priority?.toUpperCase() || "MEDIUM"}\n\n` +
+              `Our IT team will respond to your request within ${ticketData.priority === 'critical' ? '1 hour' : 
+                                                               ticketData.priority === 'high' ? '4 hours' : 
+                                                               ticketData.priority === 'medium' ? '8 hours' : '24 hours'}.\n\n` +
+              `**Suggested Solution:**\n${suggestedSolution}\n\n` +
+              `Is there anything else you'd like to add to your ticket?`,
+              "assistant"
+            );
+          } else {
+            // Error handling - attempt retry if we haven't maxed out retries
+            if (retryCount < maxRetries) {
+              retryCount++;
+              addMessage(
+                `⚠️ Having trouble connecting to the IT system. Retrying... (Attempt ${retryCount}/${maxRetries})`,
+                "assistant"
+              );
+              setTimeout(attemptSubmission, 2000); // Retry after 2 seconds
+            } else {
+              // Max retries reached, show final error
+              setIsProcessing(false);
+              addMessage(
+                `❌ There was an error submitting your ticket: ${response.message}\n\n` +
+                `Please try again later or contact IT support directly at support@medicalclinic.com.\n\n` +
+                `Error details: ${response.message}`,
+                "assistant"
+              );
+            }
+          }
+        })
+        .catch(error => {
+          // Exception handling - attempt retry if we haven't maxed out retries
+          if (retryCount < maxRetries) {
+            retryCount++;
+            addMessage(
+              `⚠️ Having trouble connecting to the IT system. Retrying... (Attempt ${retryCount}/${maxRetries})`,
+              "assistant"
+            );
+            setTimeout(attemptSubmission, 2000); // Retry after 2 seconds
+          } else {
+            // Max retries reached, show final error
+            console.error("Error in ticket submission:", error);
+            setIsProcessing(false);
+            addMessage(
+              `❌ An unexpected error occurred while submitting your ticket. Please try again later or contact IT support directly at support@medicalclinic.com.\n\n` +
+              `Error details: ${error instanceof Error ? error.message : "Connection failed"}`,
+              "assistant"
+            );
+          }
         });
-        setIsProcessing(false);
-      });
+    };
+    
+    // Start the submission process
+    attemptSubmission();
   };
   
   const renderFormStep = () => {

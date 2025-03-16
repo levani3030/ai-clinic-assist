@@ -1,0 +1,504 @@
+{
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "medical-it-support",
+          "options": {}
+        },
+        "id": "2b232a3a-1bde-4907-8998-aad522be8018",
+        "name": "Webhook Trigger",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1,
+        "position": [
+          -1300,
+          1420
+        ],
+        "webhookId": "04673d2e-e6a9-4883-855a-11d0fbd53725"
+      },
+      {
+        "parameters": {
+          "keepOnlySet": true,
+          "values": {
+            "string": [
+              {
+                "name": "ticketId",
+                "value": "={{ $json.ticketId || 'TKT-' + Math.floor(Math.random() * 10000).toString().padStart(4, '0') }}"
+              },
+              {
+                "name": "clinicName",
+                "value": "={{ $json.clinicName }}"
+              },
+              {
+                "name": "department",
+                "value": "={{ $json.department }}"
+              },
+              {
+                "name": "location",
+                "value": "={{ $json.location }}"
+              },
+              {
+                "name": "phone",
+                "value": "={{ $json.phone }}"
+              },
+              {
+                "name": "priority",
+                "value": "={{ $json.priority || 'Medium' }}"
+              },
+              {
+                "name": "description",
+                "value": "={{ $json.description }}"
+              },
+              {
+                "name": "timestamp",
+                "value": "={{ $now.format('YYYY-MM-DD HH:mm:ss') }}"
+              },
+              {
+                "name": "status",
+                "value": "New"
+              },
+              {
+                "name": "recipients",
+                "value": "={{ $json.recipients || 'it-support@yourcompany.com' }}"
+              },
+              {
+                "name": "requesterEmail",
+                "value": "={{ $json.requesterEmail }}"
+              },
+              {
+                "name": "callbackUrl",
+                "value": "={{ $json.callbackUrl }}"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "42059e92-028a-463b-bc1e-9ce449dbf66a",
+        "name": "Data Transformation",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1,
+        "position": [
+          -1100,
+          1420
+        ]
+      },
+      {
+        "parameters": {
+          "functionCode": "// Simple AI processing function that would be replaced with a real AI service call\nconst description = items[0].json.description || '';\nconst lowercaseDesc = description.toLowerCase();\n\n// Determine category\nlet category = 'General IT Support';\nif (lowercaseDesc.includes('printer') || lowercaseDesc.includes('scanner') || lowercaseDesc.includes('hardware')) {\n  category = 'Hardware';\n} else if (lowercaseDesc.includes('software') || lowercaseDesc.includes('application') || lowercaseDesc.includes('program')) {\n  category = 'Software';\n} else if (lowercaseDesc.includes('network') || lowercaseDesc.includes('internet') || lowercaseDesc.includes('wifi')) {\n  category = 'Network';\n} else if (lowercaseDesc.includes('password') || lowercaseDesc.includes('login') || lowercaseDesc.includes('access')) {\n  category = 'Access';\n} else if (lowercaseDesc.includes('email') || lowercaseDesc.includes('outlook') || lowercaseDesc.includes('mail')) {\n  category = 'Email';\n} else if (lowercaseDesc.includes('ehr') || lowercaseDesc.includes('emr') || lowercaseDesc.includes('medical record')) {\n  category = 'Clinical Software';\n} else if (lowercaseDesc.includes('virus') || lowercaseDesc.includes('security') || lowercaseDesc.includes('breach')) {\n  category = 'Security';\n}\n\n// Generate basic analysis\nlet analysis = `This appears to be a ${category.toLowerCase()} issue based on the keywords in the description.`;\n\n// Provide a suggested solution based on category\nlet suggestedSolution = '';\nswitch(category) {\n  case 'Hardware':\n    suggestedSolution = 'Try restarting the device. If the issue persists, check all connections and cables.';\n    break;\n  case 'Software':\n    suggestedSolution = 'Close the application and restart it. Verify you have the latest updates installed.';\n    break;\n  case 'Network':\n    suggestedSolution = 'Check your connection settings and try restarting your network equipment.';\n    break;\n  case 'Access':\n    suggestedSolution = 'Verify your credentials are correct. If you cannot remember your password, use the password reset function.';\n    break;\n  case 'Email':\n    suggestedSolution = 'Check your email settings and ensure your mailbox is not full. Try accessing email via webmail.';\n    break;\n  case 'Clinical Software':\n    suggestedSolution = 'Document the exact error message and what you were doing when the issue occurred. This will help the support team troubleshoot.';\n    break;\n  case 'Security':\n    suggestedSolution = 'Do not interact with suspicious content. Disconnect from the network if possible and contact IT security immediately.';\n    break;\n  default:\n    suggestedSolution = 'Please provide more details about your issue so we can better assist you.';\n}\n\n// Return processed data\nreturn [\n  {\n    json: {\n      ...items[0].json,\n      category,\n      analysis,\n      suggestedSolution\n    }\n  }\n];"
+        },
+        "id": "023fe9d2-921a-43d1-9ba3-6bde1448a771",
+        "name": "AI Processing",
+        "type": "n8n-nodes-base.function",
+        "typeVersion": 1,
+        "position": [
+          -900,
+          1420
+        ]
+      },
+      {
+        "parameters": {
+          "dataType": "string",
+          "value1": "={{ $json.priority }}",
+          "rules": {
+            "rules": [
+              {
+                "value2": "Critical"
+              },
+              {
+                "value2": "High"
+              },
+              {
+                "value2": "Medium"
+              },
+              {
+                "value2": "Low"
+              }
+            ]
+          }
+        },
+        "id": "846ce7e1-f3b6-4d32-9b52-ccfc87040212",
+        "name": "Priority Router",
+        "type": "n8n-nodes-base.switch",
+        "typeVersion": 1,
+        "position": [
+          -700,
+          1420
+        ]
+      },
+      {
+        "parameters": {
+          "keepOnlySet": true,
+          "values": {
+            "string": [
+              {
+                "name": "needsEscalation",
+                "value": "true"
+              },
+              {
+                "name": "responseTime",
+                "value": "1 hour"
+              },
+              {
+                "name": "alertLevel",
+                "value": "Critical"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "68230092-991e-482e-ac5a-5892faf0d0a5",
+        "name": "Critical Priority Handling",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1,
+        "position": [
+          -500,
+          1260
+        ]
+      },
+      {
+        "parameters": {
+          "keepOnlySet": true,
+          "values": {
+            "string": [
+              {
+                "name": "needsEscalation",
+                "value": "false"
+              },
+              {
+                "name": "responseTime",
+                "value": "4 hours"
+              },
+              {
+                "name": "alertLevel",
+                "value": "High"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "7dc3663d-de68-4943-b2b9-749253593836",
+        "name": "High Priority Handling",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1,
+        "position": [
+          -500,
+          1420
+        ]
+      },
+      {
+        "parameters": {
+          "keepOnlySet": true,
+          "values": {
+            "string": [
+              {
+                "name": "needsEscalation",
+                "value": "false"
+              },
+              {
+                "name": "responseTime",
+                "value": "8 hours"
+              },
+              {
+                "name": "alertLevel",
+                "value": "Medium"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "d9fcaf4a-d98e-4c31-8592-2e2d93248414",
+        "name": "Medium Priority Handling",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1,
+        "position": [
+          -500,
+          1560
+        ]
+      },
+      {
+        "parameters": {
+          "keepOnlySet": true,
+          "values": {
+            "string": [
+              {
+                "name": "needsEscalation",
+                "value": "false"
+              },
+              {
+                "name": "responseTime",
+                "value": "24 hours"
+              },
+              {
+                "name": "alertLevel",
+                "value": "Low"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "id": "1e3b3bf3-4027-4203-9c8d-7e2879ac8652",
+        "name": "Low Priority Handling",
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 1,
+        "position": [
+          -500,
+          1720
+        ]
+      },
+      {
+        "parameters": {
+          "mode": "mergeByPosition",
+          "options": {}
+        },
+        "id": "f5240ae1-2132-487b-b360-1a3f7b8be5e3",
+        "name": "Merge",
+        "type": "n8n-nodes-base.merge",
+        "typeVersion": 2,
+        "position": [
+          -300,
+          1460
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "append",
+          "sheetId": "1vXzzBZc47iZx93WBxcJKmNBKR6j-OxNcQJimkNrdPAU",
+          "options": {}
+        },
+        "id": "7c64f53b-c3fe-4362-8b8e-fe078ca10566",
+        "name": "Google Sheets",
+        "type": "n8n-nodes-base.googleSheets",
+        "typeVersion": 2,
+        "position": [
+          -100,
+          1460
+        ],
+        "credentials": {
+          "googleSheetsOAuth2Api": {
+            "id": "cICzA7L6WMJSbBPw",
+            "name": "Google Sheets account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "fromEmail": "support@aiclinic.yourdomain.com",
+          "toEmail": "={{ $json.recipients }}",
+          "subject": "New IT Support Ticket #{{ $json.ticketId }} - {{ $json.priority }} Priority",
+          "html": "<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;color:#333;line-height:1.6}.container{max-width:600px;margin:0 auto;padding:20px}.header{background-color:#e6f7ff;padding:20px;border-radius:10px 10px 0 0;text-align:center}.content{padding:20px;background-color:#f9f9f9}.footer{background-color:#ffe6f2;padding:15px;border-radius:0 0 10px 10px;text-align:center;font-size:14px}.table{width:100%;border-collapse:collapse;margin:20px 0}.table th{background-color:#e6f7ff;padding:10px;text-align:left}.table td{padding:10px;border-bottom:1px solid #ddd}.priority-critical{background-color:#ffebeb;color:#d90000;font-weight:700}.priority-high{background-color:#fff5e6;color:#c60;font-weight:700}.priority-medium{background-color:#fffde6;color:#990}.priority-low{background-color:#f2ffe6;color:#360}.logo{width:100px;height:auto;margin-bottom:10px}.solution{background-color:#f0f8ff;padding:15px;border-left:4px solid #0066cc;margin:15px 0}.ai-analysis{background-color:#f9f9f9;padding:15px;border-left:4px solid #666;margin:15px 0}</style></head><body><div class=\"container\"><div class=\"header\"><img src=\"https://yourdomain.com/medical-logo.png\" alt=\"Medical IT Support\" class=\"logo\"><h2>IT Support Ticket Notification</h2></div><div class=\"content\"><p>A new IT support ticket has been created:</p><table class=\"table\"><tr><th colspan=\"2\">Ticket Information</th></tr><tr><td><strong>Ticket ID:</strong></td><td>{{ $json.ticketId }}</td></tr><tr><td><strong>Clinic:</strong></td><td>{{ $json.clinicName }}</td></tr><tr><td><strong>Department:</strong></td><td>{{ $json.department }}</td></tr><tr><td><strong>Location:</strong></td><td>{{ $json.location }}</td></tr><tr><td><strong>Contact:</strong></td><td>{{ $json.phone }}</td></tr><tr><td><strong>Priority:</strong></td><td class=\"priority-{{ $json.priority.toLowerCase() }}\">{{ $json.priority }}</td></tr><tr><td><strong>Category:</strong></td><td>{{ $json.category }}</td></tr><tr><td><strong>Required Response:</strong></td><td>{{ $json.responseTime }}</td></tr><tr><td><strong>Reported:</strong></td><td>{{ $json.timestamp }}</td></tr></table><h3>Issue Description:</h3><p>{{ $json.description }}</p><div class=\"ai-analysis\"><h4>AI Analysis:</h4><p>{{ $json.analysis }}</p></div><div class=\"solution\"><h4>Suggested Solution:</h4><p>{{ $json.suggestedSolution }}</p></div>{{#if $json.needsEscalation === 'true'}}<div style=\"background-color:#ffebeb;padding:10px;border-left:4px solid #d90000;margin:20px 0\"><p><strong>ESCALATION NOTICE:</strong> This issue has been flagged for immediate attention based on priority and content.</p></div>{{/if}}<p>Please respond to this ticket according to your department's SLA guidelines.</p></div><div class=\"footer\"><p>This is an automated notification from the Medical IT Support System. Please do not reply to this email.</p></div></div></body></html>",
+          "options": {}
+        },
+        "id": "d81f1710-0192-47e4-8c0d-83d373cd38b4",
+        "name": "Send Email",
+        "type": "n8n-nodes-base.emailSend",
+        "typeVersion": 1,
+        "position": [
+          100,
+          1460
+        ],
+        "credentials": {
+          "smtp": {
+            "id": "9EDsV1Pm2Nt0yDbG",
+            "name": "SMTP account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "boolean": [
+              {
+                "value1": "={{ $json.requesterEmail !== undefined && $json.requesterEmail !== '' }}",
+                "operation": "equals",
+                "value2": true
+              }
+            ]
+          }
+        },
+        "id": "9971e078-9008-4712-a33d-788d7d43c5f2",
+        "name": "Has Requester Email?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 1,
+        "position": [
+          300,
+          1460
+        ]
+      },
+      {
+        "parameters": {
+          "fromEmail": "support@aiclinic.yourdomain.com",
+          "toEmail": "={{ $json.requesterEmail }}",
+          "subject": "Your IT Support Ticket #{{ $json.ticketId }} Has Been Received",
+          "html": "<!DOCTYPE html><html><head><style>body{font-family:Arial,sans-serif;color:#333;line-height:1.6}.container{max-width:600px;margin:0 auto;padding:20px}.header{background-color:#e6f7ff;padding:20px;border-radius:10px 10px 0 0;text-align:center}.content{padding:20px;background-color:#f9f9f9}.footer{background-color:#ffe6f2;padding:15px;border-radius:0 0 10px 10px;text-align:center;font-size:14px}.table{width:100%;border-collapse:collapse;margin:20px 0}.table th{background-color:#e6f7ff;padding:10px;text-align:left}.table td{padding:10px;border-bottom:1px solid #ddd}.button{display:inline-block;padding:10px 20px;background-color:#4CAF50;color:white;text-decoration:none;border-radius:5px;font-weight:bold;margin-top:20px}.priority-{{ $json.priority.toLowerCase() }}{font-weight:700}</style></head><body><div class=\"container\"><div class=\"header\"><h2>IT Support Confirmation</h2></div><div class=\"content\"><p>Dear User,</p><p>Thank you for submitting an IT support ticket. Your request has been received and is being processed.</p><table class=\"table\"><tr><th colspan=\"2\">Ticket Information</th></tr><tr><td><strong>Ticket ID:</strong></td><td>{{ $json.ticketId }}</td></tr><tr><td><strong>Priority:</strong></td><td class=\"priority-{{ $json.priority.toLowerCase() }}\">{{ $json.priority }}</td></tr><tr><td><strong>Expected Response:</strong></td><td>{{ $json.responseTime }}</td></tr><tr><td><strong>Submitted:</strong></td><td>{{ $json.timestamp }}</td></tr></table><p>Our AI assistant has suggested the following solution:</p><p><strong>{{ $json.suggestedSolution }}</strong></p><p>Our IT support team will be in touch with you soon. Based on the ticket priority, you can expect a response within <strong>{{ $json.responseTime }}</strong>.</p>{{#if $json.callbackUrl}}<p><a href=\"{{ $json.callbackUrl }}\" class=\"button\">Check Ticket Status</a></p>{{/if}}</div><div class=\"footer\"><p>This is an automated confirmation. If you need immediate assistance, please call the IT support desk.</p></div></div></body></html>",
+          "options": {}
+        },
+        "id": "9d9b8534-e97e-425d-af9a-61bd255a6cac",
+        "name": "Send Confirmation to Requester",
+        "type": "n8n-nodes-base.emailSend",
+        "typeVersion": 1,
+        "position": [
+          500,
+          1360
+        ],
+        "credentials": {
+          "smtp": {
+            "id": "9EDsV1Pm2Nt0yDbG",
+            "name": "SMTP account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "content": "=# Ticket Processing Complete\n\nTicket ID: {{ $json.ticketId }}\nPriority: {{ $json.priority }}\nStatus: {{ $json.status }}\n\nThe ticket has been logged in the system and notifications have been sent.",
+          "height": 250,
+          "width": 400
+        },
+        "id": "1c0dea05-1664-4739-985d-47e5445a2dff",
+        "name": "Workflow Complete",
+        "type": "n8n-nodes-base.stickyNote",
+        "typeVersion": 1,
+        "position": [
+          500,
+          1560
+        ]
+      }
+    ],
+    "connections": {
+      "Webhook Trigger": {
+        "main": [
+          [
+            {
+              "node": "Data Transformation",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Data Transformation": {
+        "main": [
+          [
+            {
+              "node": "AI Processing",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "AI Processing": {
+        "main": [
+          [
+            {
+              "node": "Priority Router",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Priority Router": {
+        "main": [
+          [
+            {
+              "node": "Critical Priority Handling",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "High Priority Handling",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Medium Priority Handling",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Low Priority Handling",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Critical Priority Handling": {
+        "main": [
+          [
+            {
+              "node": "Merge",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "High Priority Handling": {
+        "main": [
+          [
+            {
+              "node": "Merge",
+              "type": "main",
+              "index": 1
+            }
+          ]
+        ]
+      },
+      "Merge": {
+        "main": [
+          [
+            {
+              "node": "Google Sheets",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Google Sheets": {
+        "main": [
+          [
+            {
+              "node": "Send Email",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Send Email": {
+        "main": [
+          [
+            {
+              "node": "Has Requester Email?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Has Requester Email?": {
+        "main": [
+          [
+            {
+              "node": "Send Confirmation to Requester",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "pinData": {},
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "580199160330c6f8bad6c3558d01447d8b44dc26a8c1a52f66752bfc70584caa"
+    }
+  }
