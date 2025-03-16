@@ -1,6 +1,6 @@
 
 import { N8nWorkflowData } from "../types";
-import { getConfiguredWebhookUrl } from "../components/N8nConfigPanel";
+import { getConfiguredWebhookUrl } from "../utils/n8nWorkflow";
 
 /**
  * Test script for n8n webhook connectivity

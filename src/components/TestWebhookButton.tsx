@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from './ui/button';
-import { N8nWorkflowData } from '../types';
+import { N8nWorkflowData } from "../types";
 import { toast } from './ui/use-toast';
 import { getConfiguredWebhookUrl } from '../utils/n8nWorkflow';
 
