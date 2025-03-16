@@ -1,4 +1,6 @@
+
 import { N8nWorkflowData } from "../types";
+import { getConfiguredWebhookUrl } from "../components/N8nConfigPanel";
 
 /**
  * Test script for n8n webhook connectivity
@@ -27,8 +29,8 @@ const testData: N8nWorkflowData = {
  */
 const testWebhook = async (): Promise<void> => {
   try {
-    // Update this URL to your actual n8n webhook URL
-    const webhookUrl = "http://localhost:5678/webhook/medical-it-support";
+    // Get configured webhook URL
+    const webhookUrl = getConfiguredWebhookUrl();
     
     console.log("Sending test data to webhook:", webhookUrl);
     console.log("Test data:", JSON.stringify(testData, null, 2));
@@ -37,19 +39,40 @@ const testWebhook = async (): Promise<void> => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        "Accept": "application/json",
+        // Add origin and CORS headers
+        "Origin": typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173',
       },
+      // Do not include credentials for cross-domain requests unless CORS is properly configured
       body: JSON.stringify(testData)
     });
     
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, response: ${errorText}`);
     }
     
-    const result = await response.json();
+    let result;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.indexOf('application/json') !== -1) {
+      result = await response.json();
+    } else {
+      result = await response.text();
+    }
+    
     console.log("Webhook test successful! Response:", result);
+    console.log("\n===== CONNECTIVITY TEST SUCCESSFUL =====");
+    console.log("The webhook is correctly configured and accepting connections.");
+    console.log("You can now use this webhook endpoint in your application.");
   } catch (error) {
-    console.error("Webhook test failed:", error);
+    console.error("===== WEBHOOK TEST FAILED =====");
+    console.error("Error details:", error);
+    console.error("\nTroubleshooting steps:");
+    console.error("1. Verify that your n8n instance is running");
+    console.error("2. Check that the webhook URL is correct");
+    console.error("3. Ensure CORS is properly configured in your n8n instance");
+    console.error("4. Check network connectivity between this application and the n8n server");
+    console.error("5. Verify the webhook path is correctly set to '/medical-it-support'");
   }
 };
 
@@ -62,3 +85,5 @@ testWebhook();
 2. Run: npx ts-node src/utils/testWebhook.ts
 3. Check the console output for results
 */ 
+
+export default testWebhook;

@@ -1,33 +1,9 @@
+
 import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { N8nWorkflowData } from '../types';
 import { toast } from './ui/use-toast';
-
-// Key for storing the webhook URL in localStorage
-const N8N_WEBHOOK_URL_KEY = 'n8n_webhook_url';
-const N8N_USE_CUSTOM_URL_KEY = 'n8n_use_custom_url';
-
-/**
- * Gets the configured webhook URL
- */
-const getConfiguredWebhookUrl = (): string => {
-  const useCustom = localStorage.getItem(N8N_USE_CUSTOM_URL_KEY) === 'true';
-  
-  if (useCustom) {
-    const savedUrl = localStorage.getItem(N8N_WEBHOOK_URL_KEY);
-    if (savedUrl) {
-      return savedUrl;
-    }
-  }
-  
-  // Default URL logic
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return "http://localhost:5678/webhook/medical-it-support";
-  } else {
-    return `https://${hostname}/webhook/medical-it-support`;
-  }
-};
+import { getConfiguredWebhookUrl } from '../utils/n8nWorkflow';
 
 const TestWebhookButton: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -66,20 +42,31 @@ const TestWebhookButton: React.FC = () => {
           "Accept": "application/json",
           "Origin": window.location.origin
         },
-        credentials: 'include',
         body: JSON.stringify(testData)
       });
       
+      // Handle different response types
+      let resultMessage = "";
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`HTTP error! Status: ${response.status}, Response: ${errorText}`);
       }
       
-      const result = await response.json();
-      console.log("Webhook test successful! Response:", result);
+      // Try to parse JSON response, but handle non-JSON responses gracefully
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const result = await response.json();
+        resultMessage = typeof result === 'object' ? JSON.stringify(result) : result.toString();
+        console.log("Webhook test successful! Response:", result);
+      } else {
+        const textResult = await response.text();
+        resultMessage = textResult || "Received non-JSON response";
+        console.log("Webhook test successful! Text response:", textResult);
+      }
       
       toast({
         title: "Webhook Test Successful",
-        description: `Response: ${JSON.stringify(result)}`,
+        description: `Response: ${resultMessage.substring(0, 200)}${resultMessage.length > 200 ? '...' : ''}`,
         variant: "default",
       });
     } catch (error) {
@@ -107,4 +94,4 @@ const TestWebhookButton: React.FC = () => {
   );
 };
 
-export default TestWebhookButton; 
+export default TestWebhookButton;

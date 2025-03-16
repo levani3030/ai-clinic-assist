@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Clinic, 
@@ -73,7 +74,8 @@ const ChatInterface: React.FC = () => {
       id: "1",
       role: "system",
       content: "Welcome to Medical IT Support! I'll guide you through reporting your technical issue. Let's start by selecting your clinic.",
-      timestamp: new Date()
+      timestamp: new Date(),
+      step: "clinic" // Make sure initial message belongs to the first step
     }
   ]);
   
@@ -92,6 +94,7 @@ const ChatInterface: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
+  const [visibleMessages, setVisibleMessages] = useState<Message[]>([]);
   
   // Update selected clinic when the clinic ID changes
   useEffect(() => {
@@ -105,10 +108,18 @@ const ChatInterface: React.FC = () => {
     }
   }, [formData.clinic]);
   
+  // Filter messages for the current step - this creates the "fixed window" effect
+  useEffect(() => {
+    const filtered = messages.filter(
+      msg => msg.step === currentStep || msg.step === undefined
+    );
+    setVisibleMessages(filtered);
+  }, [messages, currentStep]);
+  
   // Scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [visibleMessages]);
   
   const addMessage = (content: string, role: MessageRole = "assistant") => {
     const newMessage: Message = {
@@ -316,9 +327,9 @@ Is this information correct? Your ticket will be created and routed to the appro
               `🏥 **Clinic:** ${selectedClinicName}\n` +
               `🔍 **Category:** ${category}\n` +
               `🚨 **Priority:** ${sanitizedData.priority?.toUpperCase() || "MEDIUM"}\n\n` +
-              `Our IT team will respond to your request within ${ticketData.priority === 'critical' ? '1 hour' : 
-                                                               ticketData.priority === 'high' ? '4 hours' : 
-                                                               ticketData.priority === 'medium' ? '8 hours' : '24 hours'}.\n\n` +
+              `Our IT team will respond to your request within ${ticketData.priority === 'CRITICAL' ? '1 hour' : 
+                                                               ticketData.priority === 'HIGH' ? '4 hours' : 
+                                                               ticketData.priority === 'MEDIUM' ? '8 hours' : '24 hours'}.\n\n` +
               `**Suggested Solution:**\n${suggestedSolution}\n\n` +
               `Is there anything else you'd like to add to your ticket?`,
               "assistant"
@@ -561,11 +572,11 @@ Is this information correct? Your ticket will be created and routed to the appro
           {/* Messages area - now with filtering */}
           <div className="flex-1 overflow-y-auto mb-4 px-2">
             <div className="py-4">
-              {messages.map((message) => (
+              {visibleMessages.map((message) => (
                 <MessageBubble 
                   key={message.id} 
-                  message={message} 
-                  hide={message.step !== undefined && message.step !== currentStep}
+                  message={message}
+                  hide={false} // We're already filtering the messages
                 />
               ))}
               <div ref={messagesEndRef} />
