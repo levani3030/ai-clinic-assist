@@ -24,6 +24,7 @@ export interface Message {
   role: MessageRole;
   content: string;
   timestamp: Date;
+  step?: FormStep; // Add step property to track which form step the message belongs to
 }
 
 export interface FormData {
@@ -48,4 +49,17 @@ export type FormStep =
 export interface ValidationResult {
   isValid: boolean;
   message?: string;
+}
+
+export interface N8nWorkflowData {
+  ticketId: string;
+  clinicName: string;
+  department: string;
+  location: string;
+  phone: string;
+  priority: string;
+  description: string;
+  category: string;
+  timestamp: string;
+  needsEscalation: boolean;
 }

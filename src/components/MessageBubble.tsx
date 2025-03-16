@@ -6,10 +6,13 @@ import { Stethoscope, User } from "lucide-react";
 
 interface MessageBubbleProps {
   message: Message;
+  hide?: boolean;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, hide = false }) => {
   const isUser = message.role === "user";
+  
+  if (hide) return null;
   
   return (
     <div

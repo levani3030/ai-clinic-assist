@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { 
   Clinic, 
@@ -7,7 +6,8 @@ import {
   FormStep, 
   Message, 
   MessageRole, 
-  Priority 
+  Priority,
+  N8nWorkflowData
 } from "../types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -29,6 +29,7 @@ import {
   sanitizeData, 
   shouldEscalate 
 } from "../utils/aiProcessing";
+import { prepareWorkflowData, sendToN8nWebhook } from "../utils/n8nWorkflow";
 import MessageBubble from "./MessageBubble";
 import ClinicSelection from "./ClinicSelection";
 import PrioritySelector from "./PrioritySelector";
@@ -113,7 +114,8 @@ const ChatInterface: React.FC = () => {
       id: Date.now().toString(),
       role,
       content,
-      timestamp: new Date()
+      timestamp: new Date(),
+      step: currentStep // Track which step this message belongs to
     };
     
     setMessages(prev => [...prev, newMessage]);
@@ -272,32 +274,51 @@ Is this information correct? Your ticket will be created and routed to the appro
   const handleSubmitTicket = () => {
     setIsProcessing(true);
     
-    // This would connect to an actual backend API in production
-    setTimeout(() => {
-      const sanitizedData = sanitizeData(formData);
-      
-      // Success notification
-      toast({
-        title: "Support Ticket Created",
-        description: `Your ticket has been submitted to ${selectedClinic?.name} IT support team.`,
+    // Prepare data for n8n workflow
+    const workflowData = prepareWorkflowData(formData, selectedClinic?.name || "Unknown Clinic");
+    
+    // In production, this would call an actual API endpoint
+    sendToN8nWebhook(workflowData)
+      .then(response => {
+        if (response.success) {
+          // Success notification
+          toast({
+            title: "Support Ticket Created",
+            description: `Ticket ${workflowData.ticketId} has been submitted to ${selectedClinic?.name} IT support team.`,
+          });
+          
+          addMessage(`Thank you! Your IT support ticket (${workflowData.ticketId}) has been created successfully. The support team will contact you soon at ${formatPhoneNumber(formData.phone)}. You can close this chat or submit another issue.`);
+          
+          // Reset the form for a new ticket
+          setFormData({
+            clinic: null,
+            department: null,
+            floor: "",
+            room: "",
+            phone: "",
+            priority: null,
+            description: ""
+          });
+          
+          setCurrentStep("clinic");
+        } else {
+          toast({
+            title: "Error",
+            description: "There was a problem creating your ticket. Please try again.",
+            variant: "destructive"
+          });
+        }
+        setIsProcessing(false);
+      })
+      .catch(error => {
+        console.error("Error submitting ticket:", error);
+        toast({
+          title: "Error",
+          description: "There was a problem creating your ticket. Please try again.",
+          variant: "destructive"
+        });
+        setIsProcessing(false);
       });
-      
-      addMessage("Thank you! Your IT support ticket has been created successfully. The support team will contact you soon. You can close this chat or submit another issue.");
-      
-      // Reset the form for a new ticket
-      setFormData({
-        clinic: null,
-        department: null,
-        floor: "",
-        room: "",
-        phone: "",
-        priority: null,
-        description: ""
-      });
-      
-      setCurrentStep("clinic");
-      setIsProcessing(false);
-    }, 2000);
   };
   
   const renderFormStep = () => {
@@ -488,11 +509,15 @@ Is this information correct? Your ticket will be created and routed to the appro
     <div className="flex flex-col h-full max-w-2xl mx-auto">
       <Card className="flex-1 flex flex-col overflow-hidden glass-panel">
         <CardContent className="flex-1 flex flex-col p-4 h-full">
-          {/* Messages area */}
+          {/* Messages area - now with filtering */}
           <div className="flex-1 overflow-y-auto mb-4 px-2">
             <div className="py-4">
               {messages.map((message) => (
-                <MessageBubble key={message.id} message={message} />
+                <MessageBubble 
+                  key={message.id} 
+                  message={message} 
+                  hide={message.step !== undefined && message.step !== currentStep}
+                />
               ))}
               <div ref={messagesEndRef} />
             </div>

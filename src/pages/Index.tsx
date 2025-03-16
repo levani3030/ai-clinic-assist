@@ -2,19 +2,27 @@
 import React from "react";
 import ChatInterface from "@/components/ChatInterface";
 import { Button } from "@/components/ui/button";
-import { Stethoscope } from "lucide-react";
+import { Stethoscope, FileText } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-blue-50 to-indigo-50">
       {/* Header */}
-      <header className="p-6 flex justify-center items-center border-b bg-white/50 backdrop-blur-sm shadow-sm">
+      <header className="p-6 flex justify-between items-center border-b bg-white/50 backdrop-blur-sm shadow-sm">
         <div className="flex items-center gap-2">
           <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center text-white">
             <Stethoscope className="h-6 w-6" />
           </div>
           <h1 className="text-2xl font-semibold text-primary">Medical IT Support</h1>
         </div>
+        
+        <Link to="/workflow">
+          <Button variant="outline" size="sm" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Workflow Documentation
+          </Button>
+        </Link>
       </header>
       
       {/* Main content */}
